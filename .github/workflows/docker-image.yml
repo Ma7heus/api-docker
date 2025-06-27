@@ -7,17 +7,31 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: |
-        docker build . \
-          --file Dockerfile \
-          --tag my-image-name:$(date +%s) \
-          --build-arg GITHUB_USERNAME=${{ secrets.GITHUB_ACTOR }} \
-          --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+
+      - name: Criar settings.xml do Maven com autenticação GitHub Packages
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Build the Docker image
+        run: |
+          docker build . \
+            --file Dockerfile \
+            --tag my-image-name:$(date +%s) \
+            --build-arg GITHUB_USERNAME=${{ github.actor }} \
+            --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
